@@ -325,6 +325,132 @@ object Problems {
     }
   }
 
+  object P27 {
+
+    import P26._
+
+    def group3[A](list: List[A]) = {
+      for {
+        a <- combinations(2, list)
+        rem = list diff a
+        b <- combinations(3, rem)
+      } yield List(a, b, rem diff b)
+    }
+  }
+
+  object P28 {
+    import P26._
+    def group[A](ns: List[Int], list: List[A]): List[List[List[A]]] = ns match {
+      case Nil => List(Nil)
+      case n :: ntail => combinations(n, list) flatMap { choosen =>
+        group(ntail, list diff choosen) map { choosen :: _ }
+      }
+    }
+  }
+
+  object P29 {
+    def lsort[A](l: List[List[A]]): List[List[A]] = {
+      if (l.isEmpty) Nil
+      else {
+        val pivot = l.head
+        val left = lsort(l.filter(_.length < pivot.length))
+        val right = lsort(l.filter(_.length > pivot.length))
+
+        val ret: List[List[A]] = if (left.isEmpty && right.isEmpty) List(pivot)
+        else if (left.isEmpty && right.nonEmpty) pivot :: right
+        else if (left.nonEmpty && right.isEmpty) left :+ pivot
+        else (left :+ pivot) ::: right
+
+        ret
+      }
+    }
+  }
+  object P30 {
+    def lsortFreq[A](l: List[List[A]]): List[List[A]] = {
+      if (l.isEmpty) Nil
+      else {
+        val pivot: List[A] = l.head
+
+        val left: List[List[A]] = lsortFreq(l.filter(_.length > pivot.length))
+        val right: List[List[A]] = lsortFreq(l.filter(_.length < pivot.length))
+
+        val ret: List[List[A]] = if (left.isEmpty && right.isEmpty) List(pivot)
+        else if (left.isEmpty && right.nonEmpty) pivot :: right
+        else if (left.nonEmpty && right.isEmpty) left :+ pivot
+        else (left :+ pivot) ::: right
+
+        ret
+      }
+    }
+  }
+
+  object P31 {
+    implicit def intExtPrime(n: Int) = new {
+      def isPrime: Boolean = {
+        !(2 to Math.sqrt(n).toInt).exists(n % _ == 0)
+      }
+    }
+  }
+
+  object P32 {
+    @tailrec
+    def gcd(n: Int, m: Int): Int = {
+      if (n == 0) m
+      else if (n > m) gcd(m, n - m)
+      else gcd(n, m - n)
+    }
+  }
+
+  object P33 {
+    import P32._
+    implicit def extendIsCoprimeTo(n: Int) = new {
+      def isCoprimeTo(m: Int) = gcd(n, m) == 1
+    }
+  }
+
+  object P34 {
+    import P33._
+    implicit def extendToTotient(n: Int) = new {
+      def totient: Int = {
+        (1 to n).count(n.isCoprimeTo(_))
+      }
+    }
+  }
+
+  object P35 {
+    def isPrime(n: Int): Boolean = {
+      !(2 to Math.sqrt(n).toInt).exists(n % _ == 0)
+    }
+
+    def primes(n: Int): Stream[Int] = if (isPrime(n)) n #:: primes(n + 1) else primes(n + 1)
+    val infPrimes = primes(2)
+
+    implicit def extendsToPrimeFactors(n: Int) = new {
+      def primeFactors: List[Int] = {
+        val primes = infPrimes.takeWhile(_ < n).filter(n % _ == 0).toList
+
+        def repeatMany(n2: Int, p: List[Int], result: List[Int]): List[Int] = {
+          p match {
+            case Nil =>  result
+            case h :: t if n2 % h != 0 => repeatMany(n2, t, result)
+            case h :: _ => repeatMany(n2 / h, p, result :+ h)
+          }
+        }
+
+        repeatMany(n, primes, Nil)
+      }
+    }
+  }
+
+  object P36 {
+    import P35._
+    implicit def extendsToPrimeFactorMultiplicity(n: Int) = new {
+      def primeFactorMultiplicity = {
+        n.primeFactors.groupBy((i: Int) => i).mapValues(_.length)
+      }
+    }
+  }
+
   case class MTree[+T](value: T, children: List[MTree[T]]) {
     def this(value: T) = this(value, List())
     override def toString: String = value.toString + children.map(_.toString).mkString("") + "^"

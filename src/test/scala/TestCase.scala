@@ -201,6 +201,77 @@ class TestCase extends FlatSpec {
     )
   }
 
+  "P27, P28" should "group 3 items" in {
+    import P27._
+    import P28._
+
+    val testSet = List("Aldo", "Beat", "Carla", "David", "Evi", "Flip", "Gary", "Hugo", "Ida")
+
+    assert(group3(testSet) diff group(List(2, 3, 4), testSet) isEmpty)
+  }
+
+  "P29, P30" should "sort items well" in {
+    import P29._
+    import P30._
+
+    val testSet = List(List('a, 'b, 'c), List('d, 'e), List('f, 'g, 'h), List('d, 'e), List('i, 'j, 'k, 'l), List('m, 'n), List('o))
+
+    val lsortResult = lsort(testSet)
+    val lsortFreqResult = lsortFreq(testSet)
+
+    assert((lsortResult zip lsortResult.tail).forall {
+      case (left, right) => left.length <= right.length
+    })
+
+    assert((lsortFreqResult zip lsortFreqResult.tail).forall {
+      case (left, right) => left.length >= right.length
+    })
+  }
+
+  def isPrime(n: Int): Boolean = {
+    !(2 to Math.sqrt(n).toInt).exists(n % _ == 0)
+  }
+
+  def primes(n: Int): Stream[Int] = if (isPrime(n)) n #:: primes(n + 1) else primes(n + 1)
+  val infPrimes = primes(2)
+
+  "P31" should s"show primes ${infPrimes.take(10).toList.mkString(", ")} to be true" in {
+    import P31._
+
+    assert(infPrimes.take(10).forall(_.isPrime))
+  }
+
+  "P32" should "show gcd(36, 63) == 9" in {
+    import P32._
+
+    assert(gcd(36, 63) == 9)
+  }
+
+  "P33" should "35 is coprime to 64" in {
+    import P33._
+
+    35.isCoprimeTo(64)
+  }
+
+  "P34" should "shows totient" in {
+    import P34._
+
+    assert(10.totient == 4)
+  }
+
+  "P35" should "show prime factors" in {
+    import P35._
+
+    assert(315.primeFactors == List(3, 3, 5, 7))
+  }
+
+  "P36" should "primeFactorMultiplicity" in {
+    import P36._
+    val result = 315.primeFactorMultiplicity
+    val answer = Map(3 -> 2, 5 -> 1, 7 -> 1)
+    assert(result.keys.forall(key => result(key) == answer(key)))
+  }
+
   "P70" should "show" in assert(
     MTree('a', List(MTree('f', List(MTree('g'))), MTree('c'), MTree('b', List(MTree('d'), MTree('e'))))).toString
     == "afg^^c^bd^e^^^"
