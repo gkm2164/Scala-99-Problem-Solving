@@ -272,6 +272,63 @@ class TestCase extends FlatSpec {
     assert(result.keys.forall(key => result(key) == answer(key)))
   }
 
+  "P37, P38" should "Show totient number" in {
+
+    val x = {
+      import P37._
+      10090.totient
+    }
+
+    val y = {
+      import P34._
+      10090.totient
+    }
+
+    println(x, y)
+
+    println(x == y)
+
+  }
+
+
+
+  "P39" should "show range" in {
+    import P39._
+    assert(listPrimesinRange(7 to 31) == List(7, 11, 13, 17, 19, 23, 29, 31))
+  }
+
+  "P40" should "show goldbachity" in {
+    import P40._
+    assert(28.goldbach == (5, 23))
+  }
+
+  "P41" should "show goldbach compositions well" in {
+    import P41._
+
+    printGoldbachList(9 to 20)
+    printGoldbachList(1 to 2000, 50)
+  }
+
+  "P46" should "show truth table" in {
+    import Logics._
+    import P46._
+
+    table2((a, b) => and(a, or(a, b)))
+  }
+
+  "P49" should "gray code" in {
+    import P49._
+
+    assert(gray(3) == List("000", "001", "011", "010", "110", "111", "101", "100"))
+  }
+
+  "P50" should "show huffman code" in {
+    import P50._
+    val inputs = List(("a", 45), ("b", 13), ("c", 12), ("d", 16), ("e", 9), ("f", 5))
+    val output = List(("a", "0"), ("b", "101"), ("c","100"), ("d","111"), ("e","1101"), ("f", "1100"))
+    assert(huffman(inputs).sortBy(_._1) == output.sortBy(_._1))
+  }
+
   "P70" should "show" in assert(
     MTree('a', List(MTree('f', List(MTree('g'))), MTree('c'), MTree('b', List(MTree('d'), MTree('e'))))).toString
     == "afg^^c^bd^e^^^"

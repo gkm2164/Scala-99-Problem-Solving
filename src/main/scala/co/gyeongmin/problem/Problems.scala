@@ -1,6 +1,8 @@
 package co.gyeongmin.problem
 
 import scala.annotation.tailrec
+import scala.collection.immutable.Queue
+import scala.collection.mutable
 import scala.language.postfixOps
 import scala.util.Random
 
@@ -417,13 +419,17 @@ object Problems {
     }
   }
 
-  object P35 {
+  object PrimeSet {
     def isPrime(n: Int): Boolean = {
       !(2 to Math.sqrt(n).toInt).exists(n % _ == 0)
     }
 
     def primes(n: Int): Stream[Int] = if (isPrime(n)) n #:: primes(n + 1) else primes(n + 1)
     val infPrimes = primes(2)
+  }
+
+  object P35 {
+    import PrimeSet._
 
     implicit def extendsToPrimeFactors(n: Int) = new {
       def primeFactors: List[Int] = {
@@ -448,6 +454,178 @@ object Problems {
       def primeFactorMultiplicity = {
         n.primeFactors.groupBy((i: Int) => i).mapValues(_.length)
       }
+    }
+  }
+
+  object P37 {
+    import P36._
+
+    implicit def totientExt(n: Int) = new {
+      def totient: Int = n.primeFactorMultiplicity.foldLeft(1) { (r, f) =>
+        f match {
+          case (p, m) => r * (p - 1) * Math.pow(p, m - 1).toInt
+        }
+      }
+    }
+  }
+
+  object P39 {
+    import PrimeSet._
+
+    def listPrimesinRange(inclusive: Range.Inclusive) =
+      infPrimes.dropWhile(_ < inclusive.start).takeWhile(_ <= inclusive.end).toList
+  }
+
+  object P40 {
+    import P31._
+    import PrimeSet._
+
+    implicit def goldbachExt(n: Int) = new {
+      def goldbach: (Int, Int) = {
+        infPrimes takeWhile { _ < n } find { i => (n - i).isPrime } match {
+          case None => throw new IllegalStateException()
+          case Some(p) => (p, n - p)
+        }
+      }
+    }
+  }
+
+  object P41 {
+    import P31._
+    import P40._
+    import PrimeSet._
+
+    def printGoldbachList(range: Range): Unit = {
+      range.filter(_ % 2 == 0).foreach {
+        i =>
+          val (l, r) = i.goldbach
+          println(s"$i = $l + $r")
+      }
+    }
+
+    def printGoldbachList(range: Range, min: Int): Unit = {
+      range.filter(n => n % 2 == 0 && n >= min).filter { num =>
+        infPrimes.dropWhile(_ < min).takeWhile(_ < num).find {
+          i => {
+            (num - i).isPrime && (num - i) >= min
+          }
+        } match {
+          case None => false
+          case Some(p) => {
+            println(s"$num = $p + ${num - p}")
+            true
+          }
+        }
+      }
+    }
+  }
+
+  object Logics {
+    def and(a: Boolean, b: Boolean) = a && b
+    def or(a: Boolean, b: Boolean) = a || b
+    def nand(a: Boolean, b: Boolean) = !and(a, b)
+    def nor(a: Boolean, b: Boolean) = !or(a, b)
+    def xor(a: Boolean, b: Boolean) = or(and(a, !b), and(!a, b))
+    def impl(a: Boolean, b: Boolean) = or(!a, and(a, b))
+    def equ(a: Boolean, b: Boolean) = or(and(a, b), nor(a, b))
+
+    object Implicits {
+      implicit def boolExt(a: Boolean) = new {
+        def and(b: Boolean) = Logics.and(a, b)
+        def or(b: Boolean) = Logics.or(a, b)
+        def nand( b: Boolean) = Logics.nand(a, b)
+        def nor(b: Boolean) = Logics.nor(a, b)
+        def xor(b: Boolean) = Logics.xor(a, b)
+        def impl(b: Boolean) = Logics.impl(a, b)
+        def equ(b: Boolean) = Logics.impl(a, b)
+      }
+    }
+  }
+
+  object P46 {
+    def table2(f: (Boolean, Boolean) => Boolean): Unit = {
+      println("A      B      result")
+      for {
+        a <- List(true, false)
+        b <- List(true, false)
+      } yield {
+        println(s"$a $b ${f(a, b)}")
+      }
+    }
+  }
+
+  object P49 {
+    val map: mutable.Map[Int, List[String]] = mutable.Map(0 -> List("0", "1"))
+
+    def makeBaseString(n: Int): List[String] = {
+      def makeBaseString(m: Int): List[String] = {
+        if (m >= n) {
+          map(n)
+        } else {
+          if (!(map contains (m + 1)))
+            map.put(m + 1, map(m) ::: map(m).reverse)
+
+          makeBaseString(m + 1)
+        }
+      }
+
+      makeBaseString(0)
+    }
+
+    import P14._
+
+    def gray(n: Int) = {
+      def gray(m: Int, prevStep: List[String]): List[String] = {
+        if (m >= n)
+          prevStep
+        else {
+          gray(m + 1,
+            (duplicate(prevStep) zip makeBaseString(m)).map {
+              case (l, r) => l + r
+            })
+        }
+      }
+
+      gray(0, List(""))
+    }
+  }
+
+  object P50 {
+    abstract class Node[+A](val freq: Int) {
+      val comp: Ordering[Node[_]] = {
+        Ordering.by((_: Node[_]).freq)
+      }
+      def +[B >: A](node: Node[B]): NonLeaf[B] = {
+        val list: List[Node[B]] = List(this, node)
+        NonLeaf(list.min(comp), list.max(comp))
+      }
+    }
+
+    case class NonLeaf[+A](left: Node[A], right: Node[A]) extends Node[A](left.freq + right.freq)
+    case class Leaf[+A](symbol: A, f: Int) extends Node[A](f)
+
+    def encodeTree[A](node: Node[A], strQueue: Queue[String]): List[(A, String)] = {
+      node match {
+        case NonLeaf(l, r) => encodeTree(l, strQueue.enqueue("0")) ::: encodeTree(r, strQueue.enqueue("1"))
+        case Leaf(symbol, _) => List((symbol, strQueue.mkString("")))
+      }
+    }
+
+    def huffman[A](lists: List[(A, Int)]): List[(A, String)] = {
+      def huffman(nodes: List[Node[A]]): List[(A, String)] = {
+        if (nodes.length == 1)
+          encodeTree(nodes.head, Queue())
+        else {
+          val (chosen, rest) = nodes.sortBy(_.freq).splitAt(2)
+          val cr = chosen.reduce(_ + _)
+
+          huffman(cr :: rest)
+        }
+      }
+
+      huffman(lists.map {
+        case (symbol, freq) => Leaf(symbol, freq)
+      })
     }
   }
 
