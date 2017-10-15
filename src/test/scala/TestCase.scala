@@ -329,6 +329,46 @@ class TestCase extends FlatSpec {
     assert(huffman(inputs).sortBy(_._1) == output.sortBy(_._1))
   }
 
+  "P55" should "Show trees" in {
+    println(Tree.cBalanced(4, "x").toString())
+  }
+
+  "P56" should "show symmetric" in {
+    assert(Node('a', Node('b'), Node('c')).isSymmetric)
+  }
+
+  "P57" should "add value test" in {
+
+    assert(Tree.fromList(List(5, 3, 18, 1, 4, 12, 21)).isSymmetric)
+    assert(!Tree.fromList(List(3, 2, 5, 7, 4)).isSymmetric)
+  }
+
+  "P59" should "show height balanced binary trees" in {
+    println(Tree.hbalTrees(2, "x").toString)
+
+    assert(Tree.hbalTrees(1, "x").toString == "T(x . .)")
+    assert(Tree.hbalTrees(2, "x").toString == "T(x T(x . .) T(x . .))")
+  }
+
+  "P60" should "show max height" in {
+    assert(Tree.maxHbalHeight(4) == 3)
+  }
+
+  "P61" should "show leaf count" in {
+    assert(Node("x", Node("x"), End).leafCount == 1)
+  }
+
+  "P62" should "show leaf nodes" in {
+    assert(Node('a', Node('b'), Node('c', Node('d'), Node('e'))).leafList.sorted == List('b', 'd', 'e'))
+  }
+
+  "P63" should "show tree" in {
+    println(Tree.completeBinaryTree(6, "x").toString)
+    println(Tree.completeBinaryTree(7, "x").toString)
+    println(Tree.completeBinaryTree(8, "x").toString)
+    assert(Tree.completeBinaryTree(6, "x").toString == "T(x T(x T(x . .) T(x . .)) T(x T(x . .) .))")
+  }
+
   "P70" should "show" in assert(
     MTree('a', List(MTree('f', List(MTree('g'))), MTree('c'), MTree('b', List(MTree('d'), MTree('e'))))).toString
     == "afg^^c^bd^e^^^"

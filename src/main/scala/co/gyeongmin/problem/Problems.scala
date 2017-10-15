@@ -629,6 +629,147 @@ object Problems {
     }
   }
 
+  sealed abstract class Tree[+T] {
+    def isMirrorOf[V](tree: Tree[V]): Boolean
+    def isSymmetric: Boolean
+    def leafCount: Int
+    def leafList: List[T]
+
+    def addValue[U >: T](value: U)(implicit ordimp: U => Ordered[U]): Node[U]
+  }
+  case class Node[+T](value: T, left: Tree[T], right: Tree[T]) extends Tree[T] {
+    override def toString: String = "T(" + value.toString + " " + left.toString + " " + right.toString + ")"
+
+    def isMirrorOf[V](tree: Tree[V]): Boolean =
+      tree match {
+        case t: Node[V] => left.isMirrorOf(t.right) && right.isMirrorOf(t.left)
+        case _ => false
+      }
+
+    def isSymmetric: Boolean = left.isMirrorOf(right)
+
+    override def addValue[U >: T](value: U)(implicit ordimp: U => Ordered[U]): Node[U] = {
+      this match {
+        case n@Node(_, End, _) if this.value < value => n.copy(left = Node(value))
+        case n@Node(_, _, End) if this.value >= value => n.copy(right = Node(value))
+        case _ =>
+          if (this.value < value)
+            this.copy(left = left.addValue(value))
+          else
+            this.copy(right = right.addValue(value))
+      }
+    }
+
+    def leafCount: Int = {
+      this match {
+        case Node(_, End, End) => 1
+        case Node(_, l, r) => l.leafCount + r.leafCount
+      }
+    }
+
+    def leafList: List[T] = {
+      def leafList(node: Node[T]): List[T] = {
+        this match {
+          case Node(c, End, End) => List(c)
+          case Node(_, l, r) => l.leafList ::: r.leafList
+        }
+      }
+
+      leafList(this)
+    }
+  }
+  case object End extends Tree[Nothing] {
+    override def toString = "."
+
+    override def isMirrorOf[V](tree: Tree[V]): Boolean = tree == End
+
+    override def isSymmetric: Boolean = true
+
+    override def addValue[T](value: T)(implicit ordimp: T => Ordered[T]): Node[T] = Node(value)
+
+    override def leafCount: Int = 0
+
+    override def leafList = Nil
+  }
+
+  object Node {
+    def apply[T](value: T): Node[T] = Node(value, End, End)
+  }
+
+  object Tree {
+    def treeSize[A](t: Tree[A]): Int = {
+      t match {
+        case End => 0
+        case Node(_, l, r) => 1 + treeSize(l) + treeSize(r)
+      }
+    }
+    def cBalanced[A](n: Int, value: A): List[Tree[A]] = {
+      n match {
+        case 0 => List(End)
+        case _ if n % 2 == 1 =>
+          for {
+            l <- cBalanced(n / 2, value)
+            r <- cBalanced(n / 2, value)
+          } yield Node(value, l, r)
+
+        case _ if n % 2 == 0 =>
+          val ret = for {
+            l <- cBalanced((n - 1) / 2, value)
+            r <- cBalanced((n - 1) / 2 + 1, value)
+          } yield List(Node(value, l, r), Node(value, r, l))
+
+          ret.flatten
+      }
+    }
+
+    def fromList[T](list: List[T])(implicit ev$1: T => Ordered[T]): Tree[T] = {
+      list.foldLeft(End: Tree[T])(_.addValue(_))
+    }
+
+    def symmetricBalancedTrees[A](nodes: Int, value: A): List[Tree[A]] = cBalanced(nodes, value).filter(_.isSymmetric)
+
+    def hbalTrees[A](h: Int, value: A): Node[A] = {
+      if (h == 1) Node(value)
+      else {
+        val node = hbalTrees(h - 1, value)
+        Node(value, left = node, right = node)
+      }
+    }
+
+    def minHbalNodes(height: Int): Int =
+      if (height == 0) 0
+      else minHbalNodes(height / 2) + 1
+
+    def maxHbalHeight(nodes: Int): Int = {
+      val bits = (0 to 4).map(1 << _).foldLeft(nodes) {
+        (acc, shifting) => acc | (acc >> shifting)
+      }
+
+      val masks = List(0x11111111).flatMap(m => (0 until 4).map(m << _))
+      val ret = (0 until 4).map { n =>
+        List((bits & masks(n)) >>> n).flatMap {
+            item => (0 until 8).map(i => (item >> (4 * i)) & 0xF)
+          }.sum
+        }.sum
+
+      ret
+    }
+
+    def completeBinaryTree[T](n: Int, value: T): Tree[T] = {
+      n match {
+        case 0 => End
+        case n if n % 2 == 0 =>
+          Node(value, completeBinaryTree(n / 2, value), completeBinaryTree(n / 2 - 1, value))
+        case n if n % 2 == 1 =>
+          Node(value, completeBinaryTree(n / 2, value), completeBinaryTree(n / 2, value))
+      }
+    }
+  }
+
+  case class PositionedNode[+T](override val value: T, override val left: Tree[T], override val right: Tree[T], x: Int, y: Int) extends Node[T](value, left, right) {
+    override def toString = "T[" + x.toString + "," + y.toString + "](" + value.toString + " " + left.toString + " " + right.toString + ")"
+  }
+
   case class MTree[+T](value: T, children: List[MTree[T]]) {
     def this(value: T) = this(value, List())
     override def toString: String = value.toString + children.map(_.toString).mkString("") + "^"
